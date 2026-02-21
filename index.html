@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeidiSQL Password Decoder</title>
+    <style>
+        :root {
+            --bg: #faf9f7;
+            --card-bg: #ffffff;
+            --text: #374151;
+            --text-muted: #6b7280;
+            --accent: #7c3aed;
+            --accent-hover: #6d28d9;
+            --input-bg: #ffffff;
+            --input-border: #d1d5db;
+            --input-focus: #7c3aed;
+            --btn-secondary-bg: #f3f4f6;
+            --btn-secondary-hover: #e5e7eb;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --error-bg: #fef2f2;
+            --error-text: #b91c1c;
+            --error-border: #fecaca;
+            --success-bg: #d1fae5;
+            --success-text: #065f46;
+        }
+
+        [data-theme="dark"] {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --text: #eeeeee;
+            --text-muted: #aaaaaa;
+            --accent: #e94560;
+            --accent-hover: #d63850;
+            --input-bg: #0f0f23;
+            --input-border: #2a2a4a;
+            --input-focus: #e94560;
+            --btn-secondary-bg: #2a2a4a;
+            --btn-secondary-hover: #3a3a5a;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --error-bg: #450a0a;
+            --error-text: #fca5a5;
+            --error-border: #7f1d1d;
+            --success-bg: #064e3b;
+            --success-text: #6ee7b7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: var(--shadow);
+            transition: background 0.3s;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.25rem;
+            }
+            
+            .header {
+                margin-bottom: 16px;
+            }
+            
+            .field {
+                margin-bottom: 16px;
+            }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent);
+            transition: color 0.3s;
+        }
+
+        .theme-toggle {
+            background: var(--btn-secondary-bg);
+            border: none;
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: background 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--btn-secondary-hover);
+        }
+
+        .field {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 1rem;
+            font-family: monospace;
+            transition: border-color 0.2s, background 0.3s, color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--input-focus);
+        }
+
+        .output-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .output-group input {
+            flex: 1;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-decode {
+            width: 100%;
+            background: var(--accent);
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        .btn-decode:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-copy {
+            background: var(--btn-secondary-bg);
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        .btn-copy:hover {
+            background: var(--btn-secondary-hover);
+        }
+
+        .btn-copy.copied {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+
+        .error-message {
+            background: var(--error-bg);
+            color: var(--error-text);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.875rem;
+            display: none;
+            border: 1px solid var(--error-border);
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        [data-theme="dark"] .error-message {
+            background: var(--error-bg);
+            color: var(--error-text);
+            border-color: var(--error-border);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <h1>HeidiSQL Password Decoder</h1>
+            <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </div>
+
+        <div class="field">
+            <label for="hexInput">Encoded Password (Hex)</label>
+            <input type="text" id="hexInput" placeholder="426F76656666711">
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <button class="btn-decode" id="decodeBtn">Decode</button>
+
+        <div class="field">
+            <label for="output">Decoded Password</label>
+            <div class="output-group">
+                <input type="text" id="output" readonly placeholder="Result will appear here">
+                <button class="btn-copy" id="copyBtn">Copy</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            Built with Go + WebAssembly
+        </div>
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        themeIcon.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+        themeToggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            themeIcon.textContent = next === 'dark' ? '🌙' : '☀️';
+        });
+
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch('decoder.wasm'), go.importObject)
+            .then(result => {
+                go.run(result.instance);
+
+                document.getElementById('decodeBtn').addEventListener('click', () => {
+                    const hex = document.getElementById('hexInput').value.trim();
+                    const errorEl = document.getElementById('errorMessage');
+                    const outputEl = document.getElementById('output');
+                    
+                    const result = heidiDecode(hex);
+                    
+                    if (result.error) {
+                        errorEl.textContent = result.error;
+                        errorEl.style.display = 'block';
+                        outputEl.value = '';
+                    } else {
+                        errorEl.style.display = 'none';
+                        outputEl.value = result.result;
+                    }
+                });
+
+                document.getElementById('copyBtn').addEventListener('click', () => {
+                    const output = document.getElementById('output');
+                    if (!output.value) return;
+
+                    navigator.clipboard.writeText(output.value).then(() => {
+                        const btn = document.getElementById('copyBtn');
+                        btn.textContent = 'Copied!';
+                        btn.classList.add('copied');
+                        setTimeout(() => {
+                            btn.textContent = 'Copy';
+                            btn.classList.remove('copied');
+                        }, 1500);
+                    });
+                });
+
+                document.getElementById('hexInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        document.getElementById('decodeBtn').click();
+                    }
+                });
+            });
+    </script>
+</body>
+</html>
